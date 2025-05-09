@@ -15,7 +15,7 @@ export class AppComponent {
   mostrarErro = false;
 
   constructor(private http: HttpClient) {
-    this.apiURL = 'https://back-end-6ieu.onrender.com/';
+    this.apiURL = 'https://mytodolist-end-production.up.railway.app';
     this.READ_tarefas();
   }
 
