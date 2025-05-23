@@ -7,19 +7,66 @@ import { HttpHeaders } from '@angular/common/http';
   selector: 'app-root',
   templateUrl: './app.component.html',
   standalone: false,
-  styleUrl: './app.component.css',
+  styleUrls: ['./app.component.css'],
 })
 export class AppComponent {
   title = 'TODOapp';
-  arrayDeTarefas: Tarefa[] = [];
-  apiURL: string;
+  apiURL = 'https://back-end-6ieu.onrender.com';
   usuarioLogado = false;
+  adminLogado = false;
   tokenJWT = '{ "token":""}';
+  arrayDeTarefas: Tarefa[] = [];
   mostrarErro = false;
+  mostrarSenha = false;
+  mostrarErroLogin = false;
+  mostrarErroCamposLogin = false;
 
-  constructor(private http: HttpClient) {
-    this.apiURL = 'https://back-end-6ieu.onrender.com';
-    this.READ_tarefas();
+  mostrarAdminPanel = false;
+
+  constructor(private service: HttpClient) {
+    this.verificarLoginInicial();
+  }
+
+  verificarLoginInicial() {
+    if (typeof window !== 'undefined' && localStorage.getItem('tokenJWT')) {
+      const tokenSalvo = localStorage.getItem('tokenJWT');
+      if (tokenSalvo) {
+        this.tokenJWT = tokenSalvo;
+        this.READ_tarefas();
+      }
+    }
+  }
+
+  isAdmin(): boolean {
+    try {
+      const token = JSON.parse(this.tokenJWT).token;
+      if (!token) return false;
+
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload && payload.admin === true;
+    } catch {
+      return false;
+    }
+  }
+
+  READ_tarefas() {
+    const idToken = new HttpHeaders().set(
+      'id-token',
+      JSON.parse(this.tokenJWT).token
+    );
+    this.service
+      .get<Tarefa[]>(`${this.apiURL}/api/getAll`, { headers: idToken })
+      .subscribe(
+        (resultado) => {
+          this.arrayDeTarefas = resultado;
+          this.usuarioLogado = true;
+          this.adminLogado = this.isAdmin();
+        },
+        (error) => {
+          this.usuarioLogado = false;
+          this.adminLogado = false;
+        }
+      );
   }
 
   CREATE_tarefa(descricaoNovaTarefa: string) {
@@ -30,7 +77,7 @@ export class AppComponent {
 
     this.mostrarErro = false;
     var novaTarefa = new Tarefa(descricaoNovaTarefa, false);
-    this.http
+    this.service
       .post<Tarefa>(`${this.apiURL}/api/post`, novaTarefa)
       .subscribe((resultado) => {
         console.log(resultado);
@@ -41,7 +88,7 @@ export class AppComponent {
   DELETE_tarefa(tarefaASerRemovida: Tarefa) {
     var indice = this.arrayDeTarefas.indexOf(tarefaASerRemovida);
     var id = this.arrayDeTarefas[indice]._id;
-    this.http
+    this.service
       .delete<Tarefa>(`${this.apiURL}/api/delete/${id}`)
       .subscribe((resultado) => {
         console.log(resultado);
@@ -49,28 +96,10 @@ export class AppComponent {
       });
   }
 
-  READ_tarefas() {
-    const idToken = new HttpHeaders().set(
-      'id-token',
-      JSON.parse(this.tokenJWT).token
-    );
-    this.http
-      .get<Tarefa[]>(`${this.apiURL}/api/getAll`, { headers: idToken })
-      .subscribe(
-        (resultado) => {
-          this.arrayDeTarefas = resultado;
-          this.usuarioLogado = true;
-        },
-        (error) => {
-          this.usuarioLogado = false;
-        }
-      );
-  }
-
   UPDATE_tarefa(tarefaAserModificada: Tarefa) {
     var indice = this.arrayDeTarefas.indexOf(tarefaAserModificada);
     var id = this.arrayDeTarefas[indice]._id;
-    this.http
+    this.service
       .patch<Tarefa>(`${this.apiURL}/api/update/${id}`, tarefaAserModificada)
       .subscribe((resultado) => {
         console.log(resultado);
@@ -79,12 +108,42 @@ export class AppComponent {
   }
 
   login(username: string, password: string) {
-    var credenciais = { nome: username, senha: password };
-    this.http
-      .post(`${this.apiURL}/api/login`, credenciais)
-      .subscribe((resultado) => {
+    this.mostrarErroLogin = false;
+    this.mostrarErroCamposLogin = false;
+
+    if (!username.trim() || !password.trim()) {
+      this.mostrarErroCamposLogin = true;
+      return;
+    }
+
+    const credenciais = { nome: username, senha: password };
+
+    this.service.post(`${this.apiURL}/api/login`, credenciais).subscribe(
+      (resultado: any) => {
         this.tokenJWT = JSON.stringify(resultado);
+        localStorage.setItem('tokenJWT', this.tokenJWT);
+        this.usuarioLogado = true;
+        this.adminLogado = this.isAdmin();
         this.READ_tarefas();
-      });
+      },
+      (error) => {
+        this.mostrarErroLogin = true;
+        this.usuarioLogado = false;
+        this.adminLogado = false;
+      }
+    );
+  }
+
+  logout() {
+    localStorage.removeItem('tokenJWT');
+    this.tokenJWT = '{ "token":""}';
+    this.usuarioLogado = false;
+    this.adminLogado = false;
+    this.arrayDeTarefas = [];
+    this.mostrarAdminPanel = false;
+  }
+
+  abrirPainelAdmin() {
+    this.mostrarAdminPanel = true;
   }
 }

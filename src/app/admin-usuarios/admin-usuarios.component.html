@@ -1,0 +1,81 @@
+<div class="modal-overlay" (click)="closeAdminPanel($event)">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <button class="btn-close" (click)="closeAdminPanel($event)">
+        <i class="ri-close-fill"></i>
+      </button>
+      <h2>Painel de Usuários (Admin)</h2>
+  
+      <div class="input-group">
+        <h3>Criar Novo Usuário</h3>
+        <div class="input-with-icon">
+          <i class="ri-user-line"></i>
+          <input
+            [(ngModel)]="novoUsuario.nome"
+            placeholder="Nome"
+            class="lg-text-input"
+          />
+        </div>
+        <div class="input-with-icon">
+          <i class="ri-lock-line"></i>
+          <input
+            [(ngModel)]="novoUsuario.senha"
+            placeholder="Senha"
+            class="lg-text-input"
+            type="password"
+          />
+        </div>
+        <label class="checkbox-container">
+          <input type="checkbox" [(ngModel)]="novoUsuario.admin" />
+          Admin
+        </label>
+        <button class="btn-primary" (click)="criarUsuario()">
+          Criar Usuário
+        </button>
+      </div>
+  
+      <span class="erro-validacao" *ngIf="mostrarErroCriacao">
+        ERRO: Preencha nome e senha para criar o usuário.
+      </span>
+  
+      <hr />
+  
+      <div class="user-list">
+        <ul>
+          <li *ngFor="let u of usuarios">
+            <div class="input-group">
+              <div class="input-with-icon">
+                <i class="ri-user-line"></i>
+                <input
+                  [(ngModel)]="u.nome"
+                  class="lg-text-input"
+                  placeholder="Nome"
+                />
+              </div>
+              <div class="input-with-icon">
+                <i class="ri-lock-line"></i>
+                <input
+                  [(ngModel)]="u.senha"
+                  class="lg-text-input"
+                  type="password"
+                  placeholder="Senha"
+                />
+              </div>
+              <label class="checkbox-container">
+                <input type="checkbox" [(ngModel)]="u.admin" /> Admin
+              </label>
+            </div>
+  
+            <div class="button-group">
+              <button class="btn-primary" (click)="salvarUsuario(u)">
+                Salvar
+              </button>
+              <button class="btn-primary" (click)="deletarUsuario(u._id)">
+                Excluir
+              </button>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  
